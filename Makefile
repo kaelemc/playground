@@ -1586,6 +1586,26 @@ label-try-eda-playground-crs: | $(KUBECTL) ## Add labels to the kpt playground r
 	@echo "--> INFO: Adding eda.nokia.com/bootstrap: true label to nodeProfiles"
 	@$(KUBECTL) get nodeprofiles.core.eda.nokia.com -n $(EDA_USER_NAMESPACE) -o=jsonpath="{.items[*]['metadata.name']}" | $(XARGS_CMD) -P $(XARGS_PARALLEL) -I {} -d ' ' $(KUBECTL) -n $(EDA_USER_NAMESPACE) label nodeprofiles.core.eda.nokia.com {} "eda.nokia.com/bootstrap"="true" | $(INDENT_OUT)
 
+.PHONY: configure-codespaces-keycloak
+configure-codespaces-keycloak: | $(KUBECTL) ## Configure Keycloak frontendUrl for GitHub Codespaces
+	@if [ -n "$(CODESPACE_NAME)" ] && [ -n "$(GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN)" ]; then \
+		CODESPACE_URL="https://$(CODESPACE_NAME)-9443.$(GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN)" ;\
+		KC_URL="https://eda-keycloak:9443/core/httpproxy/v1/keycloak" ;\
+		echo "--> INFO: Configuring Keycloak frontendUrl for Codespaces..." ;\
+		$(KUBECTL) wait --for=condition=ready pod -l eda.nokia.com/app=keycloak -n $(EDA_CORE_NAMESPACE) --timeout=300s ;\
+		TOKEN=$$($(KUBECTL) exec -n $(EDA_CORE_NAMESPACE) deploy/eda-toolbox -- curl -sk -X POST \
+			"$${KC_URL}/realms/master/protocol/openid-connect/token" \
+			-d "username=admin" -d "password=admin" -d "grant_type=password" -d "client_id=admin-cli" | jq -r '.access_token') ;\
+		$(KUBECTL) exec -n $(EDA_CORE_NAMESPACE) deploy/eda-toolbox -- curl -sk -X PUT \
+			"$${KC_URL}/admin/realms/eda" \
+			-H "Authorization: Bearer $${TOKEN}" \
+			-H "Content-Type: application/json" \
+			-d "{\"attributes\": {\"frontendUrl\": \"$${CODESPACE_URL}/core/httpproxy/v1/keycloak\"}}" ;\
+		echo "--> INFO: Keycloak frontendUrl set to: $${CODESPACE_URL}/core/httpproxy/v1/keycloak" ;\
+	else \
+		echo "--> INFO: Not running in Codespaces, skipping Keycloak frontendUrl configuration" ;\
+	fi
+
 TRY_EDA_STEPS=
 TRY_EDA_STEPS+=download-tools
 TRY_EDA_STEPS+=download-pkgs
