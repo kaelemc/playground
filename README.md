@@ -1,7 +1,8 @@
 # EDA Playground
 
-[![Codespaces][codespaces-svg]][codespaces-small] 
-[![Codespaces][codespaces-svg]][codespaces-big] 
+[![Codespaces][8vcpu]][codespaces-small]&nbsp;&nbsp;
+[![Codespaces][4vcpu]][codespaces-big] 
+
 
 ---
 
@@ -13,7 +14,8 @@ The Makefile that comes with this repository has everything that is needed to en
 
 Read more about using the playground at [docs.eda.dev](https://docs.eda.dev/latest/getting-started/try-eda/).
 
-[codespaces-svg]: https://gitlab.com/rdodin/pics/-/wikis/uploads/80546a8c7cda8bb14aa799d26f55bd83/run-codespaces-btn.svg
+[8vcpu]: https://github.com/user-attachments/assets/0b45de55-21cd-443c-b2ba-630744cfb343
+[4vcpu]: https://github.com/user-attachments/assets/c8459e05-9b61-4b2d-b28b-2d65e04eaa1a
 [codespaces-small]: https://codespaces.new/kaelemc/playground?quickstart=1&devcontainer_path=.devcontainer/small/devcontainer.json
 [codespaces-big]: https://codespaces.new/kaelemc/playground?quickstart=1&devcontainer_path=.devcontainer/big/devcontainer.json
 
