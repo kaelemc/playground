@@ -1,7 +1,7 @@
 # EDA Playground
 
-[![Codespaces][8vcpu]][codespaces-small]&nbsp;&nbsp;
-[![Codespaces][4vcpu]][codespaces-big] 
+[![Codespaces][8vcpu]][codespaces-big]&nbsp;&nbsp;
+[![Codespaces][4vcpu]][codespaces-small] 
 
 
 ---
