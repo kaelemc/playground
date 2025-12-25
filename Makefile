@@ -34,6 +34,10 @@ NO_LB := yes
 $(info --> INFO: MACOS=$(MACOS) - enabling NO_KIND=$(NO_KIND) and NO_LB=$(NO_LB))
 endif
 
+ifneq ($(CODESPACE_NAME),)
+CODESPACE := true
+endif
+
 ifeq ($(NO_KIND),yes)
 NO_HOST_PORT_MAPPINGS ?= yes
 endif
@@ -135,6 +139,7 @@ KPT_SETTERS_FILE ?= $(CFG)/kpt-setters.yaml
 KPT_SETTERS_REAL_LOC := $(realpath $(KPT_SETTERS_FILE))
 KPT_SETTERS_WORK_FILE := $(TOP_DIR)/$(BUILD)/kpt-setters.yaml
 KPT_SETTERS_TRY_EDA_FILE := $(TOP_DIR)/configs/try-eda-kpt-setters.yaml
+CODESPACES_ENGINECONFIG_PATCH := $(TOP_DIR)/configs/codespaces-engineconfig-patch.yaml
 ifeq ($(KPT_SETTERS_REAL_LOC),)
 $(error "[ERROR] KPT setters file '$(KPT_SETTERS_REAL_LOC)' not found")
 endif
@@ -1547,6 +1552,13 @@ kpt-set-ext-arm-images: | $(KPT) $(BUILD) $(CFG) ## Set ARM versions of the imag
 
 ##@ Try Eda
 
+.PHONY: patch-codespaces-engineconfig
+patch-codespaces-engineconfig: | $(KUBECTL)
+	@echo "--> INFO: Patching EngineConfig for codespaces..."
+	@$(KUBECTL) patch engineconfig $(CLUSTER_MEMBER_NAME) \
+		--namespace $(EDA_CORE_NAMESPACE) \
+		--type=merge --patch-file=$(CODESPACES_ENGINECONFIG_PATCH)
+
 .PHONY: patch-try-eda-node-user
 patch-try-eda-node-user: | $(KUBECTL) ## Patch the admin node user to use default SR Linux password
 	@$(KUBECTL) patch nodeuser admin \
@@ -1615,6 +1627,7 @@ TRY_EDA_STEPS+=configure-try-eda-params
 TRY_EDA_STEPS+=eda-configure-core
 TRY_EDA_STEPS+=install-external-packages
 TRY_EDA_STEPS+=eda-install-core
+TRY_EDA_STEPS+=$(if $(CODESPACE),patch-codespaces-engineconfig,)
 TRY_EDA_STEPS+=eda-is-core-ready
 TRY_EDA_STEPS+=eda-install-apps
 TRY_EDA_STEPS+=eda-bootstrap
