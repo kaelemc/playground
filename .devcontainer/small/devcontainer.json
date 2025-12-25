@@ -23,7 +23,7 @@
       ]
     }
   },
-  "postCreateCommand": ".devcontainer/post-create.sh SMALL",
+  "postCreateCommand": ".devcontainer/post-create.sh",
   "postAttachCommand": ".devcontainer/post-attach.sh",
   "forwardPorts": [9443],
   "portsAttributes": {
