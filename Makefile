@@ -1559,6 +1559,7 @@ patch-codespaces-engineconfig: | $(KUBECTL)
 		--namespace $(EDA_CORE_NAMESPACE) \
 		--type=merge --patch-file=$(CODESPACES_ENGINECONFIG_PATCH)
 	@$(KUBECTL) rollout restart deployment eda-ce --namespace $(EDA_CORE_NAMESPACE)
+	@$(KUBECTL) rollout status deployment eda-ce --namespace $(EDA_CORE_NAMESPACE) --timeout=300s
 
 .PHONY: patch-try-eda-node-user
 patch-try-eda-node-user: | $(KUBECTL) ## Patch the admin node user to use default SR Linux password
