@@ -3,6 +3,10 @@ spec:
     resources:
       requests:
         cpu: 1m
+  testMan:
+    resources:
+      requests:
+        cpu: 1m
   customSettings:
     - applicationName: cx
       settings:
