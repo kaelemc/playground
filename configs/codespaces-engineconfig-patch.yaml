@@ -1,8 +1,8 @@
 spec:
   npp:
-      resources:
-        requests:
-          cpu: 1m
+    resources:
+      requests:
+        cpu: 1m
   customSettings:
     - applicationName: cx
       settings:
