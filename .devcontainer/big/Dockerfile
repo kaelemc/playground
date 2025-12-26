@@ -9,4 +9,4 @@ RUN apt-get update && apt-get install -y \
 
 RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
-RUN skopeo copy docker://rancher/k3s:v1.31.4-k3s1 docker-archive:/opt/k3s.tar
+RUN skopeo copy docker://ghcr.io/kaelemc/k3s-eda:latest docker-archive:/opt/k3s.tar:k3s-eda:latest
