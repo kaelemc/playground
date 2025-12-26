@@ -11,7 +11,9 @@ k3d cluster create eda-demo \
     --k3s-arg "--disable=servicelb@server:*" \
     --image ghcr.io/kaelemc/k3s-eda:latest
 
+date
 make try-eda NO_KIND=yes NO_LB=yes
+date
 
 echo "export PATH=$PATH:/workspaces/playground/tools" >> ~/.zshrc
 
