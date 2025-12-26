@@ -6,10 +6,15 @@ sudo sysctl -w fs.inotify.max_user_instances=512
 
 cd /workspaces/playground
 
+date
+docker pull ghcr.io/kaelemc/k3s-eda:latest-zstd
+date
+
+
 k3d cluster create eda-demo \
     --k3s-arg "--disable=traefik@server:*" \
     --k3s-arg "--disable=servicelb@server:*" \
-    --image ghcr.io/kaelemc/k3s-eda:latest
+    --image ghcr.io/kaelemc/k3s-eda:latest-zstd
 
 date
 make try-eda NO_KIND=yes NO_LB=yes
