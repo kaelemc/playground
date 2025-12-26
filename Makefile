@@ -21,9 +21,6 @@ endif
 ## ----------------------------------------------------------------------------|
 BUILD ?= build
 KIND_CLUSTER_NAME ?= eda-demo
-TOPO ?= $(TOP_DIR)/topology/3-nodes-srl.yaml
-SIMTOPO ?= $(TOP_DIR)/topology/00-sim-config.yaml
-TOPO_EMPTY ?= $(TOP_DIR)/topology/00-delete-all-nodes.yaml
 LOGS_DEST ?= /tmp/eda-support/logs-$(shell date +"%Y-%m-%d")
 CFG := $(TOP_DIR)/configs
 MKLIBS := $(TOP_DIR)/.mk
@@ -174,22 +171,26 @@ GET_POD_CIDR=$(KUBECTL) cluster-info dump | grep -m 1 cluster-cidr | sed 's/ //g
 
 LIST_SETTERS_SCRIPT := $(TOP_DIR)/scripts/list-setters.py
 
+TIMEOUT_TOPO_LOAD_NP_CHECK ?= 5s
+TIMEOUT_TOPO_LOAD_GET_WORKFLOW_ID ?= 1s
+TIMEOUT_TOPO_LOAD_IS_IT_COMPLETED ?= 5s
+
 ## Tool Versions:
 ## ----------------------------------------------------------------------------|
 GH_VERSION ?= 2.67.0
 HELM_VERSION ?= v3.17.0
-K9S_VERSION ?= v0.32.5
-KIND_VERSION ?= v0.29.0
+K9S_VERSION ?= v0.50.16
+KIND_VERSION ?= v0.30.0
 KPT_VERSION ?= v1.0.0-beta.57
-KUBECTL_VERSION ?= v1.33.1
+KUBECTL_VERSION ?= v1.34.1
 UV_VERSION ?= 0.6.2
 YQ_VERSION ?= v4.42.1
 
 ## EDA Versions and Decisions
 ## ----------------------------------------------------------------------------|
-EDA_CORE_VERSION ?= 25.8.3
-EDA_APPS_VERSION ?= 25.8.3
-EDABUILDER_VERSION ?= v25.8.3
+EDA_CORE_VERSION ?= 25.12.1
+EDA_APPS_VERSION ?= 25.12.1
+EDABUILDER_VERSION ?= v25.12.1
 
 
 ### Release specifc options:
@@ -202,6 +203,7 @@ EXT_RELAX_DOMAIN_NAME_ENFORCEMENT ?= false
 USE_BULK_APP_INSTALL ?= 1
 TOPO_CONFIGMAP_NAME ?= eda-topology
 EDA_PLATFORM_CMD ?= platform
+TOPOLOGY_LOAD_TARGET=topology-load-using-workflow-wait-to-be-ready topology-load-using-workflow topology-is-workflow-completed
 
 IS_EDA_CORE_VERSION_24X ?= 0
 IS_EDA_APPS_VERSION_24X ?= 0
@@ -209,25 +211,38 @@ IS_EDA_APPS_VERSION_24X ?= 0
 IS_EDA_CORE_VERSION_254X ?= 0
 IS_EDA_APPS_VERSION_254X ?= 0
 
+IS_EDA_CORE_VERSION_258X ?= 0
+IS_EDA_APPS_VERSION_258X ?= 0
+
+IS_EDA_CORE_LESSTHAN_258X := 0
+IS_EDA_CORE_LESSTHAN_2512X := 0
+
 #### Set core release specific options
 ifeq ($(findstring 24.,$(EDA_CORE_VERSION)),24.)
 USE_BULK_APP_INSTALL := 0
 TOPO_CONFIGMAP_NAME := topo-config
 IS_EDA_CORE_VERSION_24X := 1
 IS_EDA_CORE_LESSTHAN_258X := 1
+IS_EDA_CORE_LESSTHAN_2512X := 1
 
 else ifeq ($(findstring 25.4,$(EDA_CORE_VERSION)),25.4)
 IS_EDA_CORE_VERSION_254X := 1
 IS_EDA_CORE_LESSTHAN_258X := 1
+IS_EDA_CORE_LESSTHAN_2512X := 1
 APP_INSTALL_BULK_TEMPLATE := $(APP_INSTALL_BULK_TEMPLATE_254X)
 
-else
-IS_EDA_CORE_LESSTHAN_258X := 0
+else ifeq ($(findstring 25.8,$(EDA_CORE_VERSION)),25.8)
+IS_EDA_CORE_VERSION_258X := 1
+IS_EDA_CORE_LESSTHAN_2512X := 1
 
 endif
 
 ifeq ($(IS_EDA_CORE_LESSTHAN_258X),1)
 EDA_PLATFORM_CMD := cluster
+endif
+
+ifeq ($(IS_EDA_CORE_LESSTHAN_2512X),1)
+TOPOLOGY_LOAD_TARGET := topology-load-using-config-map
 endif
 
 
@@ -238,7 +253,24 @@ IS_EDA_APPS_VERSION_24X := 1
 else ifeq ($(findstring 25.4,$(EDA_APPS_VERSION)),25.4)
 IS_EDA_APPS_VERSION_254X := 1
 
+else ifeq ($(findstring 25.8,$(EDA_APPS_VERSION)),25.8)
+IS_EDA_APPS_VERSION_258X := 1
+
 endif
+
+## Topology:
+## ----------------------------------------------------------------------------|
+
+ifeq ($(IS_EDA_CORE_LESSTHAN_2512X),1)
+TOPOLOGY_DIR ?= $(TOP_DIR)/topology/configmaps
+SIMTOPO ?= $(TOPOLOGY_DIR)/00-sim-config.yaml
+
+else
+TOPOLOGY_DIR ?= $(TOP_DIR)/topology
+endif
+
+TOPO ?= $(TOPOLOGY_DIR)/3-nodes-srl.yaml
+TOPO_EMPTY ?= $(TOPOLOGY_DIR)/00-delete-all-nodes.yaml
 
 
 
@@ -262,7 +294,8 @@ INDENT_OUT := $(SED) 's/^/    /'
 INDENT_OUT_ERROR := $(SED) 's/^/        /'
 INDENT_OUT_MORE := $(SED) 's/^/          /'
 
-EDACTL_BIN := /eda/tools/edactl
+EDATOOLBOX_TOOLS := /eda/tools
+EDACTL_BIN := $(EDATOOLBOX_TOOLS)/edactl
 
 ### Execute shell command in toolbox pod
 ### Usage: $(call TOOLBOX_CMD,<shell-command>)
@@ -326,7 +359,7 @@ EDABUILDER_SRC ?= nokia-eda/edabuilder
 ### ---------------------------------------------------------------------------|
 POD_SELECTOR_GOGS ?= git
 POD_LABEL_GOGS ?= eda.nokia.com/app=$(POD_SELECTOR_GOGS)
-POD_LABEL_ET=eda.nokia.com/app=eda-toolbox
+POD_LABEL_ET ?= eda.nokia.com/app=eda-toolbox
 
 
 ### Include Libraries
@@ -345,7 +378,6 @@ $(TOOLS): | $(BASE); $(info --> INFO: Creating a tools dir: $(TOOLS))
 
 DOWNLOAD_TOOLS_LIST=
 DOWNLOAD_TOOLS_LIST += $(HELM)
-DOWNLOAD_TOOLS_LIST += $(KIND)
 DOWNLOAD_TOOLS_LIST += $(KPT)
 DOWNLOAD_TOOLS_LIST += $(KUBECTL)
 DOWNLOAD_TOOLS_LIST += $(YQ)
@@ -353,6 +385,7 @@ DOWNLOAD_TOOLS_LIST += $(YQ)
 ifneq ($(USE_ASSET_HOST),1)
 DOWNLOAD_TOOLS_LIST += $(GH)
 DOWNLOAD_TOOLS_LIST += $(UV)
+DOWNLOAD_TOOLS_LIST += $(KIND)
 DOWNLOAD_TOOLS_LIST += $(K9S)
 endif
 
@@ -692,16 +725,21 @@ instantiate-kpt-setters-work-file: | $(BASE) $(BUILD) $(CFG) $(YQ) $(KUBECTL) ##
 		fi																										;\
 		$(YQ) eval ".data.API_SVC_ENABLE_LB_NODE_PORTS = env(ENABLE_NODE_PORTS)" -i $(KPT_SETTERS_WORK_FILE)	;\
 	}
+ifdef APP_CATALOG
+	@{	\
+		$(YQ) eval ".data.APP_CATALOG = \"$(APP_CATALOG)\"" -i $(KPT_SETTERS_WORK_FILE)									;\
+	}
+endif
 # For the non-self-host case, the user must use the configs/kpt-setters.yaml file for any options
 ifeq ($(USE_ASSET_HOST),1)
 	@{	\
-		$(YQ) eval ".data.APP_REGISTRY_SKIPTLSVERIFY = \"$(APP_REGISTRY_SKIPTLSVERIFY)\"" -i $(KPT_SETTERS_WORK_FILE); \
-		$(YQ) eval ".data.APP_REGISTRY_MIRROR = \"$(APP_REGISTRY_MIRROR)\"" -i $(KPT_SETTERS_WORK_FILE); \
-		$(YQ) eval ".data.APP_CATALOG = \"$(APP_CATALOG)\"" -i $(KPT_SETTERS_WORK_FILE); \
-		$(YQ) eval ".data.GH_CATALOG_TOKEN = \"$(GH_CATALOG_TOKEN)\"" -i $(KPT_SETTERS_WORK_FILE); \
-		$(YQ) eval ".data.GH_CATALOG_USER = \"$(GH_CATALOG_USER)\"" -i $(KPT_SETTERS_WORK_FILE); \
-		$(YQ) eval ".data.YANG_REMOTE_URL = \"$(YANG_REMOTE_URL)\"" -i $(KPT_SETTERS_WORK_FILE); \
-		$(YQ) eval ".data.LLM_DB_REMOTE_URL = \"$(LLM_DB_REMOTE_URL)\"" -i $(KPT_SETTERS_WORK_FILE); \
+		$(YQ) eval ".data.APP_REGISTRY_SKIPTLSVERIFY = \"$(APP_REGISTRY_SKIPTLSVERIFY)\"" -i $(KPT_SETTERS_WORK_FILE)	;\
+		$(YQ) eval ".data.APP_REGISTRY_MIRROR = \"$(APP_REGISTRY_MIRROR)\"" -i $(KPT_SETTERS_WORK_FILE)					;\
+		$(YQ) eval ".data.APP_CATALOG = \"$(APP_CATALOG)\"" -i $(KPT_SETTERS_WORK_FILE)									;\
+		$(YQ) eval ".data.GH_CATALOG_TOKEN = \"$(GH_CATALOG_TOKEN)\"" -i $(KPT_SETTERS_WORK_FILE)						;\
+		$(YQ) eval ".data.GH_CATALOG_USER = \"$(GH_CATALOG_USER)\"" -i $(KPT_SETTERS_WORK_FILE)							;\
+		$(YQ) eval ".data.YANG_REMOTE_URL = \"$(YANG_REMOTE_URL)\"" -i $(KPT_SETTERS_WORK_FILE)							;\
+		$(YQ) eval ".data.LLM_DB_REMOTE_URL = \"$(LLM_DB_REMOTE_URL)\"" -i $(KPT_SETTERS_WORK_FILE)						;\
 	}
 endif
 
@@ -744,10 +782,11 @@ configure-universe: | configure-external-packages eda-configure-core eda-configu
 .PHONY: configure-try-eda-params
 configure-try-eda-params: | $(BASE) $(BUILD) $(KPT) $(KPT_SETTERS_TRY_EDA_FILE) ## Configure parameters specific to try-eda
 	@{	\
+		if [[ $(IS_EDA_CORE_VERSION_24X) -eq 1 ]]; then echo "--> INFO: no customizations to apply for $(EDA_CORE_VERSION)" && exit; fi	;\
 		echo "--> KPT:TRY-EDA: Configuring try-eda specific customizations"																;\
-		pushd $(KPT_PKG) &> /dev/null || (echo "[ERROR] Could not change cwd to $(KPT_PKG) from $$(pwd)" && exit 1)								;\
+		pushd $(KPT_PKG) &> /dev/null || (echo "[ERROR] Could not change cwd to $(KPT_PKG) from $$(pwd)" && exit 1)						;\
 		$(KPT) fn eval --image $(APPLY_SETTER_IMG) --truncate-output=false --fn-config $(KPT_SETTERS_TRY_EDA_FILE) 2>&1 | $(INDENT_OUT)	;\
-		popd &> /dev/null || (echo "[ERROR] Could not change cwd to $(KPT_PKG) from $$(pwd)" && exit 1)										;\
+		popd &> /dev/null || (echo "[ERROR] Could not change cwd to $(KPT_PKG) from $$(pwd)" && exit 1)									;\
 	}
 
 
@@ -959,12 +998,16 @@ define WAIT_FOR_DEP
 	}
 endef
 
+# Name of the deployments - kubectl get deployments -n <core ns>
 CE_DEPLOYMENT_LIST=eda-api eda-appstore eda-asvr eda-bsvr eda-metrics-server eda-fe eda-keycloak eda-postgres eda-sa eda-sc eda-toolbox
 ifeq ($(IS_EDA_CORE_VERSION_24X),0)
 CE_DEPLOYMENT_LIST+=eda-cert-checker
 endif
 ifeq ($(IS_EDA_CORE_LESSTHAN_258X),0)
 CE_DEPLOYMENT_LIST+=eda-se
+endif
+ifeq ($(IS_EDA_CORE_LESSTHAN_2512X),0)
+CE_DEPLOYMENT_LIST+=eda-ai-engine
 endif
 
 .PHONY: eda-is-core-deployment-ready
@@ -981,6 +1024,10 @@ eda-is-core-deployment-ready: | $(BASE) $(KUBECTL) ## Wait for all of the core p
 
 .PHONY: eda-is-core-ready
 eda-is-core-ready: | eda-is-core-deployment-ready is-ce-first-commit-done apps-is-appflow-ready ## Flight checks if core is ready
+
+.PHONY: eda-is-toolbox-ready
+eda-is-toolbox-ready:
+	@$(call K8S_WAIT_FOR_POD_RUNNING,TOOLBOX,$(POD_LABEL_ET),$(EDA_CORE_NAMESPACE))
 
 ##@ APP Install
 # -----------------------------------------------------------------------------|
@@ -1175,26 +1222,10 @@ eda-create-api-lb-svc: | $(BASE) $(KPT) ; $(info --> Creating a new API LoadBala
 
 ##@ Topology
 
+include $(MKLIBS)/topology-load.mk
+
 .PHONY: topology-load
-topology-load:  ## Load a topology file TOPO=<file>
-	@{	\
-		echo "--> TOPO: JSON Processing"					;\
-		if [[ $(IS_EDA_CORE_VERSION_24X) -eq 1 ]]; then		 \
-			$(YQ) eval-all '{"apiVersion": "v1","kind": "ConfigMap","metadata": {"name": "$(TOPO_CONFIGMAP_NAME)"},"data": {"eda.json": (. | tojson)}} ' $(TOPO) | $(KUBECTL)  --namespace $(EDA_USER_NAMESPACE) apply -f -	;\
-		else												 \
-			$(YQ) eval-all '{"apiVersion": "v1","kind": "ConfigMap","metadata": {"name": "$(TOPO_CONFIGMAP_NAME)"},"data": {"eda.yaml": load_str("$(TOPO)")}}' $(TOPO) | $(KUBECTL)  --namespace $(EDA_USER_NAMESPACE) apply -f -	;\
-		fi													;\
-		if [[ $(IS_EDA_CORE_VERSION_24X) -eq 0 ]]; then	$(KUBECTL) --namespace $(EDA_USER_NAMESPACE) apply -f $(SIMTOPO); fi ;\
-		echo "--> TOPO: config created in cluster"			;\
-		export POD_NAME=$$($(KUBECTL) --namespace $(EDA_CORE_NAMESPACE) get pod -l eda.nokia.com/app=apiserver -o jsonpath="{.items[0].metadata.name}"); \
-		echo "--> TOPO: Using POD_NAME: $$POD_NAME"			;\
-		echo "--> TOPO: Checking if $$POD_NAME is Running"	;\
-		while [ "$$($(KUBECTL) --namespace $(EDA_CORE_NAMESPACE) get pod $$POD_NAME -o jsonpath='{.status.phase}')" != "Running" ]; do \
-			echo "--> TOPO: Waiting for $$POD_NAME to be in Running state...";\
-			sleep 5											;\
-		done												;\
-		$(KUBECTL) --namespace $(EDA_CORE_NAMESPACE) exec -it $$POD_NAME -- bash -c "/app/api-server-topo -n $(EDA_USER_NAMESPACE)" | $(INDENT_OUT);\
-	}
+topology-load: $(TOPOLOGY_LOAD_TARGET)  ## Load a topology using TOPO=<file>
 
 .PHONY: set-npp-mode
 set-npp-mode: | $(BASE) $(KUBECTL) ## Set NPP mode for all toponodes to $(mode) using edactl patch (DRYRUN=yes for dry-run)
@@ -1309,6 +1340,11 @@ stop-ui-port-forward: | $(KUBECTL) ## Stop a port forward launched by this playg
 	}
 
 ##@ EDA Tools
+
+.PHONY: scale-down-git-servers
+scale-down-git-servers: ## Scale down eda-git and eda-git-replica
+	@$(MAKE) --no-print-directory -C $(TOP_DIR) scale-down-deployment NS=$(EDA_CORE_NAMESPACE) DEP=eda-git
+	@$(MAKE) --no-print-directory -C $(TOP_DIR) scale-down-deployment NS=$(EDA_CORE_NAMESPACE) DEP=eda-git-replica
 
 restart-toolbox: NS=$(EDA_CORE_NAMESPACE)
 restart-toolbox: DEP=eda-toolbox
@@ -1679,10 +1715,17 @@ IS_EDA_CORE_VERSION_24X | $(IS_EDA_CORE_VERSION_24X)
 IS_EDA_APPS_VERSION_24X | $(IS_EDA_APPS_VERSION_24X)
 IS_EDA_CORE_VERSION_254X | $(IS_EDA_CORE_VERSION_254X)
 IS_EDA_APPS_VERSION_254X | $(IS_EDA_APPS_VERSION_254X)
+IS_EDA_CORE_VERSION_258X | $(IS_EDA_CORE_VERSION_258X)
+IS_EDA_APPS_VERSION_258X | $(IS_EDA_APPS_VERSION_258X)
 IS_EDA_CORE_LESSTHAN_258X | $(IS_EDA_CORE_LESSTHAN_258X)
+IS_EDA_CORE_LESSTHAN_2512X | $(IS_EDA_CORE_LESSTHAN_2512X)
 USE_BULK_APP_INSTALL | $(USE_BULK_APP_INSTALL)
+TOPOLOGY_DIR | $(TOPOLOGY_DIR)
 TOPO_CONFIGMAP_NAME | $(TOPO_CONFIGMAP_NAME)
+TOPOLOGY_LOAD_TARGET | $(TOPOLOGY_LOAD_TARGET)
+TOPO | $(TOPO)
 APP_INSTALL_BULK_TEMPLATE | $(APP_INSTALL_BULK_TEMPLATE)
+EDA_PLATFORM_CMD | $(EDA_PLATFORM_CMD)
 EOF
 endef
 
