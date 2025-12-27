@@ -1,8 +1,6 @@
 {
   "name": "EDA Playground 8vCPU",
-  "build": {
-    "dockerfile": "Dockerfile"
-  },
+  "image": "ghcr.io/kaelemc/eda-devcontainer:latest",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest",
