@@ -5,7 +5,7 @@ sudo sysctl -w fs.inotify.max_user_watches=1048576
 sudo sysctl -w fs.inotify.max_user_instances=512
 
 date
-sudo zstd -d -c /root/image.tar.zst | docker load
+sudo zstd -d -c /root/eda.tar.zst | docker load
 date
 
 cd /workspaces/playground
