@@ -7,6 +7,10 @@ spec:
     resources:
       requests:
         cpu: 1m
+  aiEngine:
+    resources:
+      requests:
+        cpu: 1m
   customSettings:
     - applicationName: cx
       settings:
