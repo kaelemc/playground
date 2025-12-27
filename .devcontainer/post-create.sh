@@ -7,6 +7,7 @@ sudo sysctl -w fs.inotify.max_user_instances=512
 date
 sudo zstd -d -c /root/eda.tar.zst | docker load
 date
+sudo rm /root/eda.tar.zst
 
 cd /workspaces/playground
 
