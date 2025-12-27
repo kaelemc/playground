@@ -4,17 +4,16 @@ set -e
 sudo sysctl -w fs.inotify.max_user_watches=1048576
 sudo sysctl -w fs.inotify.max_user_instances=512
 
+date
+sudo zstd -d -c /root/image.tar.zst | docker load
+date
+
 cd /workspaces/playground
-
-date
-docker pull ghcr.io/kaelemc/k3s-eda:latest-zstd
-date
-
 
 k3d cluster create eda-demo \
     --k3s-arg "--disable=traefik@server:*" \
     --k3s-arg "--disable=servicelb@server:*" \
-    --image ghcr.io/kaelemc/k3s-eda:latest-zstd
+    --image k3s-eda:latest
 
 date
 make try-eda NO_KIND=yes NO_LB=yes
