@@ -1,14 +1,11 @@
-#!/bin/bash
-set -e
 
 CLUSTER_DIR="/workspaces/.k3d"
 TOKEN="eda-token"
 
+mkdir -p $CLUSTER_DIR
+
 sudo sysctl -w fs.inotify.max_user_watches=1048576
 sudo sysctl -w fs.inotify.max_user_instances=512
-
-make download-tools
-echo "export PATH=$PATH:/workspaces/playground/tools" >> ~/.zshrc
 
 k3d cluster create eda-demo \
     --volume $CLUSTER_DIR:/var/lib/rancher/k3s@server:* \
@@ -19,4 +16,4 @@ k3d cluster create eda-demo \
     --no-lb
 
 cd /workspaces/playground
-make configure-codespaces-keycloak
+make try-eda NO_LB=yes NO_KIND=yes
