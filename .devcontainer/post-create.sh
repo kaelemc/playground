@@ -10,17 +10,11 @@ until docker info > /dev/null 2>&1; do
 done
 echo "Docker daemon is ready"
 
-date
-sudo zstd -d /opt/eda.tar.zst | docker load
-date
-sudo rm /opt/eda.tar.zst
-
 cd /workspaces/playground
 
 k3d cluster create eda-demo \
     --k3s-arg "--disable=traefik@server:*" \
     --k3s-arg "--disable=servicelb@server:*" \
-    --image k3s-eda:latest \
     --no-lb
 
 date
