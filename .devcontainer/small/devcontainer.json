@@ -21,7 +21,6 @@
       ]
     }
   },
-  "onCreateCommand": ".devcontainer/on-create.sh",
   "postCreateCommand": ".devcontainer/post-create.sh",
   "postAttachCommand": ".devcontainer/post-attach.sh",
   "forwardPorts": [9443],
