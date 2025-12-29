@@ -10,6 +10,10 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+
+RUN mkdir -p /etc/docker && \
+    echo '{"data-root": "/workspaces/.docker-data"}' > /etc/docker/daemon.json
+
 # RUN curl -sL https://github.com/oras-project/oras/releases/download/v1.2.0/oras_1.2.0_linux_amd64.tar.gz \
 #     | tar -xz -C /usr/local/bin oras
 
