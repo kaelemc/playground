@@ -14,5 +14,7 @@ until docker info > /dev/null 2>&1; do
 done
 echo "Docker daemon is ready"
 
-sudo zstd -d -c /root/eda.tar.zst | docker load
-sudo rm /root/eda.tar.zst
+docker pull ghcr.io/kaelemc/k3s-eda:latest-zstd
+docker tag ghcr.io/kaelemc/k3s-eda:latest-zstd k3s-eda:latest
+# sudo zstd -d -c /root/eda.tar.zst | docker load
+# sudo rm /root/eda.tar.zst

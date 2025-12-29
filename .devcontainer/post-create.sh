@@ -25,7 +25,8 @@ k3d cluster create eda-demo \
     --k3s-arg "--disable=traefik@server:*" \
     --k3s-arg "--disable=servicelb@server:*" \
     --image k3s-eda:latest \
-    --no-lb
+    --no-lb \
+    --no-tools
 
 date
 make try-eda NO_KIND=yes NO_LB=yes
