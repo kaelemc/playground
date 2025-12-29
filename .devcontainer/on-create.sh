@@ -1,9 +1,18 @@
 #!/bin/bash
-# Runs during prebuild - only decompress the image archive
 set -e
 
-CACHE_DIR="/workspaces/.eda"
+sudo mkdir -p /etc/docker /workspaces/.docker-data
+echo '{"data-root": "/workspaces/.docker-data"}' | sudo tee /etc/docker/daemon.json
 
-mkdir -p $CACHE_DIR
-sudo zstd -d -c /root/eda.tar.zst -o "$CACHE_DIR/eda.tar"
+sudo pkill dockerd || true
+sleep 1
+sudo dockerd > /dev/null 2>&1 &
+
+echo "Waiting for Docker daemon..."
+until docker info > /dev/null 2>&1; do
+    sleep 1
+done
+echo "Docker daemon is ready"
+
+sudo zstd -d -c /root/eda.tar.zst | docker load
 sudo rm /root/eda.tar.zst
