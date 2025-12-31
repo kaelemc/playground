@@ -1,5 +1,5 @@
 {
-  "name": "EDA Playground 8vCPU",
+  "name": "EDA Playground in Codespaces",
   "image": "ghcr.io/kaelemc/eda-devcontainer:latest",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
@@ -27,11 +27,12 @@
   "portsAttributes": {
     "9443": {
       "protocol": "https",
-      "label": "EDA UI"
+      "label": "EDA UI",
+      "onAutoForward": "openBrowser"
     }
   },
   "hostRequirements": {
-    "cpus": 8,
+    "cpus": 4,
     "memory": "16gb",
     "storage": "30gb"
   },

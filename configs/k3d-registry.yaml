@@ -1,9 +1,5 @@
 mirrors:
-  "ghcr.io/nokia-eda":
-    endpoint:
-      - "http://host.k3d.internal:5000"
-      - "https://ghcr.io"
-  "ghcr.io/nokia":
+  "ghcr.io":
     endpoint:
       - "http://host.k3d.internal:5000"
       - "https://ghcr.io"

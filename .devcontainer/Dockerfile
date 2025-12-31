@@ -1,3 +1,15 @@
+FROM registry:2 AS registry
+RUN apk add --no-cache skopeo jq
+COPY tars/ /tmp/tars/
+RUN registry serve /etc/docker/registry/config.yml & \
+    until wget -qO- http://127.0.0.1:5000/v2/; do sleep 1; done && \
+    for tar in /tmp/tars/*.tar; do \
+        ref=$(tar -xOf "$tar" manifest.json | jq -r '.[0].RepoTags[0]'); \
+        localref=$(echo "$ref" | sed 's|^ghcr\.io/||'); \
+        echo "Loading $tar -> localhost:5000/$localref"; \
+        skopeo copy --dest-tls-verify=false "docker-archive:$tar" "docker://localhost:5000/$localref"; \
+    done
+
 # ghcr.io/kaelemc/eda-devcontainer:latest
 FROM mcr.microsoft.com/devcontainers/base:ubuntu
 
@@ -11,11 +23,4 @@ RUN apt-get update && apt-get install -y \
 
 RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
 
-# docker save k3s-eda | zstd -T0 -19 -o eda.tar.zst
-# COPY eda.tar.zst /opt/eda.tar.zst
-
-# RUN curl -sL https://github.com/oras-project/oras/releases/download/v1.2.0/oras_1.2.0_linux_amd64.tar.gz \
-#     | tar -xz -C /usr/local/bin oras
-
-# WORKDIR /root
-# RUN oras pull ghcr.io/kaelemc/eda:latest
+COPY --from=registry /var/lib/registry /opt/registry-data
