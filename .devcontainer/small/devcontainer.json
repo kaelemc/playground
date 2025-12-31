@@ -1,6 +1,6 @@
 {
   "name": "EDA Playground 4vCPU",
-  "image": "ghcr.io/kaelemc/eda-devcontainer:latest",
+  "image": "ghcr.io/kaelemc/eda-devcontainer:baked",
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {
       "version": "latest",
