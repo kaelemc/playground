@@ -1,5 +1,0 @@
-mirrors:
-  "ghcr.io":
-    endpoint:
-      - "http://host.k3d.internal:5000"
-      - "https://ghcr.io"

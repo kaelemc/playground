@@ -12,21 +12,10 @@ echo "Docker daemon is ready"
 
 cd /workspaces/playground
 
-docker run -d \
-    --name registry \
-    --restart always \
-    -p 5000:5000 \
-    -v /opt/registry-data:/var/lib/registry \
-    registry:2
-
-until curl -sf http://localhost:5000/v2/; do sleep 1; done
-echo "Registry up"
-
 k3d cluster create eda-demo \
     --k3s-arg "--disable=traefik@server:*" \
     --k3s-arg "--disable=servicelb@server:*" \
-    --no-lb \
-    --registry-config /workspaces/playground/configs/k3d-registry.yaml
+    --no-lb
 
 date
 make try-eda NO_KIND=yes NO_LB=yes
