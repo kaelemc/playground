@@ -1,11 +1,20 @@
-# ghcr.io/kaelemc/eda-devcontainer:latest
-FROM mcr.microsoft.com/devcontainers/base:ubuntu
+FROM registry.access.redhat.com/ubi9/ubi-init
 
-RUN apt-get update && apt-get install -y \
+RUN dnf install -y \
+    iptables \
+    kmod \
     make \
-    curl \
+    git \
+    hostname \
+    zstd \
     jq \
-    btop \
-    && rm -rf /var/lib/apt/lists/*
+    && dnf clean all
 
-RUN curl -s https://raw.githubusercontent.com/k3d-io/k3d/main/install.sh | bash
+COPY k3s-config.yaml /etc/rancher/k3s/config.yaml
+COPY images.txt /opt/images.txt
+
+RUN dnf config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo && \
+    dnf install -y docker-ce-cli && dnf clean all
+
+RUN curl -sfL https://get.k3s.io | INSTALL_K3S_SKIP_START=true INSTALL_K3S_SKIP_ENABLE=true sh -
+RUN ln -sf /etc/systemd/system/k3s.service /etc/systemd/system/multi-user.target.wants/k3s.service

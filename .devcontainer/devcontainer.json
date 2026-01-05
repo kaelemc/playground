@@ -1,17 +1,34 @@
 {
   "name": "EDA Playground in Codespaces",
-  "image": "ghcr.io/kaelemc/eda-devcontainer:latest",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {
-      "version": "latest",
-      "dockerDashComposeVersion": "v2"
-    },
-    "ghcr.io/devcontainers/features/common-utils:2": {
-      "installZsh": true,
-      "configureZshAsDefaultShell": true,
-      "installOhMyZsh": true,
-      "upgradePackages": true
-    }
+  // "image": "ghcr.io/kaelemc/eda-devcontainer:latest",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "overrideCommand": false,
+  "privileged": true,
+  "runArgs": [
+    "--cgroupns=host"
+  ],
+  "mounts": [
+    "source=/sys/fs/cgroup,target=/sys/fs/cgroup,type=bind",
+    "source=/var/run/docker.sock,target=/host-docker.sock,type=bind",
+    "source=k3s-data,target=/var/lib/rancher/k3s,type=volume"
+  ],
+  // "features": {
+  //   "ghcr.io/devcontainers/features/docker-in-docker:2": {
+  //     "version": "latest",
+  //     "dockerDashComposeVersion": "v2"
+  //   },
+  //   "ghcr.io/devcontainers/features/common-utils:2": {
+  //     "installZsh": true,
+  //     "configureZshAsDefaultShell": true,
+  //     "installOhMyZsh": true,
+  //     "upgradePackages": true
+  //   }
+  // },
+  "containerEnv": {
+    "KUBECONFIG": "/etc/rancher/k3s/k3s.yaml",
+    "DOCKER_API_VERSION": "1.43"
   },
   "customizations": {
     "vscode": {
@@ -21,6 +38,7 @@
       ]
     }
   },
+  "onCreateCommand": ".devcontainer/on-create.sh",
   "postCreateCommand": ".devcontainer/post-create.sh",
   "postAttachCommand": ".devcontainer/post-attach.sh",
   "forwardPorts": [9443],
@@ -35,7 +53,5 @@
     "cpus": 4,
     "memory": "16gb",
     "storage": "30gb"
-  },
-  "privileged": true,
-  "remoteUser": "vscode"
+  }
 }
