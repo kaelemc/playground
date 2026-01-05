@@ -16,8 +16,8 @@ k3d cluster create eda-demo \
     --no-lb
 
 TESTTOKEN=$(echo -n "bm9raWEtZWRhLWJvdDpnaHBfZHJOUXhvbWVrYUJrZUg2MXQ5aEk5U2QzTVNoMzF1MUVRMVJ4" | base64 -d)
-docker exec -d k3d-eda-demo-server-0 sh -c "cat /opt/images.txt | xargs -P 0 -I {} crictl pull --creds $TESTTOKEN {}"
+docker exec -d k3d-eda-demo-server-0 sh -c "cat /opt/images.txt | xargs -P 4 -I {} crictl pull --creds $TESTTOKEN {}"
 
 cd /workspaces/playground
 make download-tools
-echo "export PATH=$PATH:/workspaces/playground/tools" | sudo tee -a /etc/profile.d/eda-tools.sh
+echo "export PATH=$PATH:/workspaces/playground/tools" >> ~/.zshrc
