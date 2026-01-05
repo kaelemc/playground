@@ -20,4 +20,4 @@ docker exec -d k3d-eda-demo-server-0 sh -c "cat /opt/images.txt | xargs -P 0 -I 
 
 cd /workspaces/playground
 make download-tools
-echo "export PATH=$PATH:/workspaces/playground/tools" > /etc/profile.d/eda-tools.sh
+echo "export PATH=$PATH:/workspaces/playground/tools" | sudo tee -a /etc/profile.d/eda-tools.sh
