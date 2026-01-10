@@ -35,6 +35,12 @@ ifneq ($(CODESPACE_NAME),)
 CODESPACE := true
 endif
 
+ifeq ($(KAELEM),true)
+$(info --> INFO: Kaelem Debug Enabled)
+KPT_LIVE_APPLY_ARGS += --show-status-events 
+KPT_LIVE_APPLY_ARGS += --poll-period=1s
+endif
+
 ifeq ($(NO_KIND),yes)
 NO_HOST_PORT_MAPPINGS ?= yes
 endif
