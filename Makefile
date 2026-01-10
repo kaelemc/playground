@@ -1678,7 +1678,7 @@ TRY_EDA_STEPS+=eda-bootstrap
 TRY_EDA_STEPS+=$(if $(filter true,$(SIMULATE)),topology-load,)
 TRY_EDA_STEPS+=patch-try-eda-node-user
 TRY_EDA_STEPS+=label-try-eda-playground-crs
-TRY_EDA_STEPS+=$(if $(CODESPACE),configure-codespaces-keycloak,)
+# TRY_EDA_STEPS+=$(if $(CODESPACE),configure-codespaces-keycloak,)
 TRY_EDA_STEPS+=$(if $(NO_HOST_PORT_MAPPINGS),start-ui-port-forward,create-try-eda-nodeport-svc)
 TRY_EDA_STEPS+=ls-ways-to-reach-api-server
 
