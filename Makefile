@@ -125,6 +125,11 @@ ifeq ($(KPT_INVENTORY_ADOPT),1)
 KPT_LIVE_APPLY_ARGS += --inventory-policy=adopt
 endif
 
+ifeq ($(CODESPACE), true)
+$(info --> INFO: Using 7 minute reconcile timeout for kpt live apply on codespaces)
+KPT_LIVE_APPLY_ARGS += --reconcile-timeout=7m
+endif
+
 KIND_CONFIG_FILE ?= $(CFG)/kind.yaml
 KIND_CONFIG_REAL_LOC := $(realpath $(KIND_CONFIG_FILE))
 ifeq ($(KIND_CONFIG_REAL_LOC),)
