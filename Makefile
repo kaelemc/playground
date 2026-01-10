@@ -1597,6 +1597,11 @@ patch-codespaces-engineconfig: | $(YQ)
 		fi; \
 		 $(YQ) eval '.spec.customSettings = load("$(CODESPACES_ENGINECONFIG_CUSTOM_SETTINGS_PATCH)").customSettings' -i "$$ENGINE_CONFIG_FILE"
 
+.PHONY: codespace-pre-install-sleep
+codespace-pre-install-sleep: ## Sleep for 30s before eda-install-core in Codespaces environment
+	@echo "--> INFO: Codespaces environment detected, sleeping for 30s before eda-install-core..."
+	@sleep 30
+
 .PHONY: patch-try-eda-node-user
 patch-try-eda-node-user: | $(KUBECTL) ## Patch the admin node user to use default SR Linux password
 	@$(KUBECTL) patch nodeuser admin \
@@ -1665,6 +1670,7 @@ TRY_EDA_STEPS+=configure-try-eda-params
 TRY_EDA_STEPS+=eda-configure-core
 TRY_EDA_STEPS+=$(if $(CODESPACE),patch-codespaces-engineconfig,)
 TRY_EDA_STEPS+=install-external-packages
+TRY_EDA_STEPS+=$(if $(CODESPACE),codespace-pre-install-sleep,)
 TRY_EDA_STEPS+=eda-install-core
 TRY_EDA_STEPS+=eda-is-core-ready
 TRY_EDA_STEPS+=eda-install-apps
