@@ -44,6 +44,7 @@ define RUN_APP_WF
 				break																				;\
 			fi																						;\
 			COUNT=$$((COUNT + 1))																	;\
+			echo -e "$${INFO_HEADER} State:$${state}"												;\
 			sleep 1 																				;\
 		done 																						;\
 		if [ $$COMPLETED -ne 1 ] ; then																 \
