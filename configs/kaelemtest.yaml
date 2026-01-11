@@ -11,7 +11,7 @@ metadata:
 spec:
   ports:
     - name: apiserverhttps
-      port: 9443
+      port: 9444
       targetPort: 9443
   selector:
     eda.nokia.com/app: apiserver
